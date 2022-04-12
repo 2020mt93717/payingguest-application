@@ -16,7 +16,10 @@ MIT
 ## Setup Paying Guest Application
 
 1. Clone this repo "payingguest-application" with --recurse-submodules option
-2. If you forgot to add recurse submodile option then cd into payingguest-application and run git submodule update --init
+2. Run "cd payingguest-application"
+3. If you forgot to add recurse submodile option then run git submodule update --init
+4. Run "git checkout main"
+5. Run "git submodule foreach git checkout main"
 
 ## Building Docker Images
 
