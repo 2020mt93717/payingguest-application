@@ -1,0 +1,21 @@
+[submodule "payingguest-guest-service"]
+	path = payingguest-guest-service
+	url = git@github.com:2020mt93717/payingguest-guest-service.git
+[submodule "payingguest-service-registry-service"]
+	path = payingguest-service-registry-service
+	url = git@github.com:2020mt93717/payingguest-service-registry-service.git
+[submodule "payingguest-room-service"]
+	path = payingguest-room-service
+	url = git@github.com:2020mt93717/payingguest-room-service.git
+[submodule "payingguest-gateway-service"]
+	path = payingguest-gateway-service
+	url = git@github.com:2020mt93717/payingguest-gateway-service.git
+[submodule "payingguest-authentication-service"]
+	path = payingguest-authentication-service
+	url = git@github.com:2020mt93717/payingguest-authentication-service.git
+[submodule "payingguest-payment-service"]
+	path = payingguest-payment-service
+	url = git@github.com:2020mt93717/payingguest-payment-service.git
+[submodule "payingguest-bill-service"]
+	path = payingguest-bill-service
+	url = git@github.com:2020mt93717/payingguest-bill-service.git
