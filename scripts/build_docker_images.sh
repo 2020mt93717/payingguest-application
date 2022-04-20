@@ -1,3 +1,3 @@
 git pull
 git submodule foreach git pull
-git submodule foreach ./mvnw spring-boot:build-image
+git submodule foreach "sh scripts/docker_build.sh"
