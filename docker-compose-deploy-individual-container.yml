@@ -1,0 +1,198 @@
+version: '3'
+
+services:
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+    networks:
+      - kafka-network
+
+  kafka:
+    image: confluentinc/cp-kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,OUTSIDE://0.0.0.0:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+    networks:
+      - kafka-network
+
+  registry-service:
+    image: payingguest-service-registry-service:0.0.1-SNAPSHOT
+    restart: always
+    networks:
+      - registry-network
+
+  gateway-service:
+    image: payingguest-gateway-service:0.0.1-SNAPSHOT
+    restart: always
+    depends_on:
+      - registry-service
+    ports:
+      - 8080:8080
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8761/eureka
+    networks:
+      - registry-network
+
+  user-db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=userdb
+      - MYSQL_USER=authuser
+      - MYSQL_PASSWORD=authpassword
+    volumes:
+      - /var/lib/mysql_user_data:/var/lib/mysql
+    networks:
+      - auth-network
+
+  authentication-service:
+    image: payingguest-authentication-service:0.0.1-SNAPSHOT
+    restart: always
+    depends_on:
+      - registry-service
+      - user-db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://user-db:3306/userdb
+      SPRING_DATASOURCE_USERNAME: authuser
+      SPRING_DATASOURCE_PASSWORD: authpassword
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8761/eureka
+    networks:
+      - auth-network
+      - registry-network
+
+  guest-db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=guestdb
+      - MYSQL_USER=guestuser
+      - MYSQL_PASSWORD=guestpassword
+    volumes:
+      - /var/lib/mysql_guest_data:/var/lib/mysql
+    networks:
+      - guest-network
+
+  guest-service:
+    image: payingguest-guest-service:0.0.1-SNAPSHOT
+    restart: always
+    depends_on:
+      - registry-service
+      - guest-db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://guest-db:3306/guestdb
+      SPRING_DATASOURCE_USERNAME: guestuser
+      SPRING_DATASOURCE_PASSWORD: guestpassword
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8761/eureka
+      KAFKA_BOOTSTRAP_SERVER: kafka:9092
+    networks:
+      - guest-network
+      - registry-network
+      - kafka-network
+
+  payment-db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=paymentdb
+      - MYSQL_USER=paymentuser
+      - MYSQL_PASSWORD=paymentpassword
+    volumes:
+      - /var/lib/mysql_payment_data:/var/lib/mysql
+    networks:
+      - payment-network
+
+  payment-service:
+    image: payingguest-payment-service:0.0.1-SNAPSHOT
+    restart: always
+    depends_on:
+      - payment-db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://payment-db:3306/paymentdb
+      SPRING_DATASOURCE_USERNAME: paymentuser
+      SPRING_DATASOURCE_PASSWORD: paymentpassword
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8761/eureka
+      KAFKA_BOOTSTRAP_SERVER: kafka:9092
+    networks:
+      - payment-network
+      - registry-network
+      - kafka-network
+
+  room-db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=roomdb
+      - MYSQL_USER=roomuser
+      - MYSQL_PASSWORD=roompassword
+    volumes:
+      - /var/lib/mysql_room_data:/var/lib/mysql
+    networks:
+      - room-network
+
+  room-service:
+    image: payingguest-room-service:0.0.1-SNAPSHOT
+    restart: always
+    depends_on:
+      - room-db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://room-db:3306/roomdb
+      SPRING_DATASOURCE_USERNAME: roomuser
+      SPRING_DATASOURCE_PASSWORD: roompassword
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8761/eureka
+      KAFKA_BOOTSTRAP_SERVER: kafka:9092
+    networks:
+      - room-network
+      - registry-network
+      - kafka-network
+
+  bill-db:
+    image: mysql:8
+    restart: always
+    env_file: payingguest-bill-service/local.env
+    volumes:
+      - /var/lib/mysql_bill_data:/var/lib/mysql
+    networks:
+      - bill-network
+
+  bill-service:
+    command: ["npm","run","start:watch"]
+    restart: always
+    build: payingguest-bill-service/
+    env_file: payingguest-bill-service/local.env
+    volumes:
+      - .:/app
+    depends_on:
+      - pg-bill-db
+    networks:
+      - bill-network
+      - registry-network
+      - kafka-network
+
+networks:
+  kafka-network:
+    driver: bridge
+  auth-network:
+    driver: bridge
+  registry-network:
+    driver: bridge
+  guest-network:
+    driver: bridge
+  payment-network:
+    driver: bridge
+  room-network:
+    driver: bridge
+  bill-network:
+    driver: bridge
