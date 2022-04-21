@@ -17,10 +17,11 @@ services:
       - zookeeper
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,OUTSIDE://0.0.0.0:9094
+      KAFKA_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://localhost:9094
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://localhost:9094
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     networks:
       - kafka-network
 
@@ -66,6 +67,8 @@ services:
       SPRING_DATASOURCE_USERNAME: authuser
       SPRING_DATASOURCE_PASSWORD: authpassword
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8761/eureka
+      # Authentication token validity is 10 mins
+      JWT_VALIDITY_TOKEN: 600000
     networks:
       - auth-network
       - registry-network
@@ -94,7 +97,7 @@ services:
       SPRING_DATASOURCE_USERNAME: guestuser
       SPRING_DATASOURCE_PASSWORD: guestpassword
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8761/eureka
-      KAFKA_BOOTSTRAP_SERVER: kafka:9092
+      SPRING_KAFKA_BOOTSTRAP-SERVERS: kafka:9092
     networks:
       - guest-network
       - registry-network
@@ -123,7 +126,7 @@ services:
       SPRING_DATASOURCE_USERNAME: paymentuser
       SPRING_DATASOURCE_PASSWORD: paymentpassword
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8761/eureka
-      KAFKA_BOOTSTRAP_SERVER: kafka:9092
+      SPRING_KAFKA_BOOTSTRAP-SERVERS: kafka:9092
     networks:
       - payment-network
       - registry-network
@@ -152,7 +155,7 @@ services:
       SPRING_DATASOURCE_USERNAME: roomuser
       SPRING_DATASOURCE_PASSWORD: roompassword
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8761/eureka
-      KAFKA_BOOTSTRAP_SERVER: kafka:9092
+      SPRING_KAFKA_BOOTSTRAP-SERVERS: kafka:9092
     networks:
       - room-network
       - registry-network
@@ -168,12 +171,12 @@ services:
       - bill-network
 
   bill-service:
-    command: ["npm","run","start:watch"]
+    image: paying-guest-bill-sevice:latest
     restart: always
-    build: payingguest-bill-service/
-    env_file: payingguest-bill-service/local.env
+    ports:
+      - 8081:8080
     volumes:
-      - .:/app
+      - /home/jaikarthik/workspace/payingguest-application/payingguest-bill-service:/app
     depends_on:
       - pg-bill-db
     networks:
